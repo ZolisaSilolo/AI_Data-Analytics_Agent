@@ -51,8 +51,8 @@ South Africa’s business landscape is as dynamic as a Durban minibus taxi route
 ## 🛠 Setup Instructions  
 ### 1. Clone & Install  
 bash  
-git clone https://github.com/your-repo/pandas-analyst-agent.git  
-cd pandas-analyst-agent  
+git clone https://github.com/ZolisaSilolo/AI_Data_Analytics_Agent.git  
+cd AI_Data_Analytics_Agent  
 pip install -r requirements.txt  # Pro tip: Run this before load-shedding Stage 6.  
   
 
