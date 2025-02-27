@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: Pandas Data Analyst Agent
+
+Resources:
+  DataAnalystFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: PandasDataAnalystAgent
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      CodeUri: src/
+      MemorySize: 1024
+      Timeout: 30
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref DataBucket
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Sub '{{resolve:secretsmanager:${OpenAISecret}}}'
+          DATA_BUCKET: !Ref Bucket
+      Events:
+        ApiGateway:
+          Type: Api
+          Properties:
+            Path: /analyze
+            Method: POST
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-bucket-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: alias/aws/s3
+      PublicAccessBlockConfiguration:
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  BucketBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Id: RequireEncryptionInTransit
+        Version: '2012-10-17'
+        Statement:
+          - Principal: '*'
+            Action: '*'
+            Effect: Deny
+            Resource:
+              - !GetAtt Bucket.Arn
+              - !Sub ${Bucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+
+Outputs:
+  ApiUrl:
+    Description: API endpoint
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/analyze

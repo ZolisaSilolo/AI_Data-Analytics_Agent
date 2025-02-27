@@ -1,0 +1,7 @@
+langchain==0.0.300
+openai==1.0.0
+pandas==2.0.2
+plotly==5.14.1
+boto3==1.26.60
+pytest>=7.0.0
+pytest-cov>=4.0.0
