@@ -9,7 +9,7 @@ Resources:
     Properties:
       FunctionName: PandasDataAnalystAgent
       Handler: app.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.12.6
       CodeUri: src/
       MemorySize: 1024
       Timeout: 30
