@@ -197,7 +197,7 @@ pytest src/tests  # If it fails, blame the Wi-Fi, not the code.
 
 ---
 
-## 🆕 New Features (2023 Update)
+## 🆕 New Features (2025/05/20 Update)
 - **Streamlit UI**: Interactive web interface for data analysis and visualization
 - **NVIDIA Nemotron Integration**: Replaced OpenAI with NVIDIA's powerful Nemotron model
 - **Enhanced Visualizations**: Added support for heatmaps, bar charts, and scatter plots using Seaborn and Matplotlib
