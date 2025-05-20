@@ -3,7 +3,7 @@
 ---
 
 ## 📖 Overview  
-Meet your new *Data MVP* (Most Valuable Processor)! This serverless AWS-powered agent tackles raw data like a Springbok on the rugby field, transforming chaos into clarity. Built with LangChain, Pandas, Plotly, and OpenAI, it's your ubuntu (humanity)-centric tool for turning spreadsheet nightmares into actionable insights. Whether you're optimizing supply chains during load-shedding or decoding customer trends in Soweto, this agent is here to make data work for you—no sweat, no fuss.  
+Meet your new *Data MVP* (Most Valuable Processor)! This serverless AWS-powered agent tackles raw data like a Springbok on the rugby field, transforming chaos into clarity. Built with LangChain, Pandas, Plotly, and NVIDIA Nemotron, it's your ubuntu (humanity)-centric tool for turning spreadsheet nightmares into actionable insights. Whether you're optimizing supply chains during load-shedding or decoding customer trends in Soweto, this agent is here to make data work for you—no sweat, no fuss.  
 
 ---
 
@@ -69,7 +69,7 @@ In the financial sector, data wrangling is the unsung hero that turns chaotic tr
   - Create time_since_last_transaction to identify churn risks.  
 
 ### 3. *Anomaly Detection for Fraud Prevention*  
-- Use *OpenAI-powered logic* to flag patterns:  
+- Use *NVIDIA Nemotron-powered logic* to flag patterns:  
   - Sudden spikes in cash_withdrawals in Cape Town ahead of long weekends (potential holiday fraud).  
   - Multiple small deposits followed by a large transfer (smurfing alerts).  
 
@@ -80,7 +80,7 @@ In the financial sector, data wrangling is the unsung hero that turns chaotic tr
 - *Input*: Raw CSV/Excel files from South African banks (e.g., ABSA, FNB).  
 - *Agent Action*:  
   - LangChain routes the data to the data_wrangling_agent.  
-  - OpenAI infers column semantics (e.g., beneficiary_name = string; amount = float).  
+  - NVIDIA Nemotron infers column semantics (e.g., beneficiary_name = string; amount = float).  
 
 ### *Step 2: Code Generation & Execution*  
 - *Task*: Clean and structure data.  
@@ -141,7 +141,7 @@ In the financial sector, data wrangling is the unsung hero that turns chaotic tr
 
 ## 🤖 *Why This Stands Out*  
 - *AI-Powered Context Awareness*:  
-  - OpenAI understands SA-specific terms (e.g., "EFT" vs. "cash deposit").  
+  - NVIDIA Nemotron understands SA-specific terms (e.g., "EFT" vs. "cash deposit").  
   - Infers that "Sassa" in beneficiary_name likely refers to social grant recipients.  
 - *Scalability*:  
   - Processes Capitec-level transaction volumes (millions/day) via AWS Lambda.  
@@ -162,12 +162,26 @@ cd AI_Data_Analytics_Agent
 pip install -r requirements.txt  # Pro tip: Run this before load-shedding Stage 6.  
 ```  
 
-### 2. AWS Configuration  
-```bash  
-aws configure  # Use IAM keys, not your house keys! 🗝  
-```  
+### 2. Environment Configuration
+```bash
+# Copy the example environment file
+cp .env.example .env
 
-### 3. Deploy Like a Pro  
+# Edit the .env file with your credentials
+# NVIDIA_API_KEY is required for the Nemotron model
+```
+
+### 3. Run the Streamlit App
+```bash
+# Run directly with Python
+python run_streamlit.py
+
+# Or use Docker
+docker build -t pandas-analyst .
+docker run -p 8501:8501 pandas-analyst
+```
+
+### 4. AWS Deployment (Optional)
 ```bash  
 sam build  
 sam deploy --guided  # Easier than parallel parking in Sandton.  
@@ -184,11 +198,14 @@ pytest src/tests  # If it fails, blame the Wi-Fi, not the code.
 ---
 
 ## 🆕 New Features (2023 Update)
+- **Streamlit UI**: Interactive web interface for data analysis and visualization
+- **NVIDIA Nemotron Integration**: Replaced OpenAI with NVIDIA's powerful Nemotron model
 - **Enhanced Visualizations**: Added support for heatmaps, bar charts, and scatter plots using Seaborn and Matplotlib
 - **Improved Error Handling**: Robust error handling with detailed logging for better debugging
 - **Type Hints**: Added Python type hints throughout the codebase for better IDE support and code quality
 - **Performance Metrics**: Added CloudWatch metrics for monitoring execution time and success rates
 - **Expanded Test Coverage**: Comprehensive test suite for all components
+- **Docker Support**: Containerized application for easy deployment
 
 ---
 
@@ -201,7 +218,7 @@ MIT License – Free to use, like a walk on Camps Bay Beach.
 - *LangChain*: For AI conversations smoother than a Cape Town jazz riff.  
 - *AWS*: Keeping the cloud sunnier than a Highveld summer. ☁  
 - *Plotly*: Because pie charts > staring at spreadsheets at midnight.  
-- *OpenAI: For code that writes itself while you binge *Suidooster.  
+- *NVIDIA Nemotron*: For AI-powered insights that make data scientists jealous.  
 
 ---
 
