@@ -3,34 +3,34 @@
 ---
 
 ## 📖 Overview  
-Meet your new *Data MVP* (Most Valuable Processor)! This serverless AWS-powered agent tackles raw data like a Springbok on the rugby field, transforming chaos into clarity. Built with LangChain, Pandas, Plotly, and OpenAI, it’s your ubuntu (humanity)-centric tool for turning spreadsheet nightmares into actionable insights. Whether you’re optimizing supply chains during load-shedding or decoding customer trends in Soweto, this agent is here to make data work for you—no sweat, no fuss.  
+Meet your new *Data MVP* (Most Valuable Processor)! This serverless AWS-powered agent tackles raw data like a Springbok on the rugby field, transforming chaos into clarity. Built with LangChain, Pandas, Plotly, and OpenAI, it's your ubuntu (humanity)-centric tool for turning spreadsheet nightmares into actionable insights. Whether you're optimizing supply chains during load-shedding or decoding customer trends in Soweto, this agent is here to make data work for you—no sweat, no fuss.  
 
 ---
 
 ## 🌍 South African Impact: Local Challenges, Global Tech  
 ### *Key Use Cases*  
-1. *Agriculture*: Predict maize yields in Limpopo while sipping rooibos tea. Factor in drought, rainfall, and Eskom’s schedule. 🌾  
+1. *Agriculture*: Predict maize yields in Limpopo while sipping rooibos tea. Factor in drought, rainfall, and Eskom's schedule. 🌾  
 2. *Tourism*: Track peak seasons for Kruger Park safaris. Spoiler: Winter means fewer mosquitoes and more sundowners. 🦁  
 3. *Retail: Analyze *mielie meal sales spikes during tax season. Because comfort food > tax stress.  
-4. *Renewable Energy*: Optimize solar farm output—because who trusts Eskom’s schedule anyway? ☀  
+4. *Renewable Energy*: Optimize solar farm output—because who trusts Eskom's schedule anyway? ☀  
 
 ### *Why It Matters*  
-South Africa’s business landscape is as dynamic as a Durban minibus taxi route. This agent:  
+South Africa's business landscape is as dynamic as a Durban minibus taxi route. This agent:  
 - *Saves time*: Automates data tasks faster than a WhatsApp "Checkers Sixty60" order.  
-- *Boosts decisions*: Finds trends sharper than a sangoma’s intuition. 🔮  
+- *Boosts decisions*: Finds trends sharper than a sangoma's intuition. 🔮  
 - *Scales smartly: Serverless = budget-friendly, like a *pap en vleis combo.  
 
 ---
 
 ## 🔧 AWS Leadership Principles & Well-Architected Framework  
 ### *Leadership Principles*  
-- *Customer Obsession*: Built for SA’s "make-a-plan" spirit—handles offline data during load-shedding.  
+- *Customer Obsession*: Built for SA's "make-a-plan" spirit—handles offline data during load-shedding.  
 - *Ownership*: Your data stays yours. Encrypted tighter than a Pick n Pay till at month-end.  
 - *Invent & Simplify*: Turns Python chaos into one-click reports. Easier than pronouncing "Gqeberha."  
-- *Frugality*: Costs less than a bunny chow at Durban’s finest takeout. 🥘  
+- *Frugality*: Costs less than a bunny chow at Durban's finest takeout. 🥘  
 
 ### *Well-Architected Pillars*  
-- *Operational Excellence*: Deploys faster than a Jo’burg startup’s pivot.  
+- *Operational Excellence*: Deploys faster than a Jo'burg startup's pivot.  
 - *Security*: IAM roles stricter than a Pretoria traffic cop.  
 - *Reliability*: Lambda retries harder than a Vuvuzela in 2010.  
 - *Performance Efficiency*: Handles datasets bigger than the Karoo.  
@@ -43,12 +43,12 @@ South Africa’s business landscape is as dynamic as a Durban minibus taxi route
 |----------|----------------|-------------|  
 | *Banking* | Fraud detection | Spots shady transactions faster than a meerkat on lookout. |  
 | *Healthcare* | Clinic wait times | Predicts queues longer than a Cape Flats hair salon on Saturday. |  
-| *E-commerce* | Holiday demand spikes | Knows when to stock up on generators (Eskom’s BFF). |  
+| *E-commerce* | Holiday demand spikes | Knows when to stock up on generators (Eskom's BFF). |  
 | *Textile Manufacturing* | Optimize fabric waste | Saves more material than a Gogo reusing tea bags. |  
 
 # 📊 Financial Services Use Case: Data Wrangling in Exploratory Data Analysis (EDA)  
 
-In the financial sector, data wrangling is the unsung hero that turns chaotic transactional data into actionable insights. Here’s how the *Pandas Data Analyst Agent* tackles EDA for financial services, using a South African context:  
+In the financial sector, data wrangling is the unsung hero that turns chaotic transactional data into actionable insights. Here's how the *Pandas Data Analyst Agent* tackles EDA for financial services, using a South African context:  
 
 ---
 
@@ -86,12 +86,12 @@ In the financial sector, data wrangling is the unsung hero that turns chaotic tr
 - *Task*: Clean and structure data.  
 - *Agent Action*:  
   - create_data_wrangler_code generates Pandas snippets:  
-    python  
+    ```python  
     # Fix date formats  
     df['transaction_date'] = pd.to_datetime(df['transaction_date'], errors='coerce')  
     # Handle outliers  
     df = df[df['amount_ZAR'] < df['amount_ZAR'].quantile(0.99)]  
-      
+    ```  
   - execute_data_wrangler_code runs the code, while fix_code debug errors like KeyError.  
 
 ### *Step 3: Explaining & Validating Changes*  
@@ -111,7 +111,7 @@ In the financial sector, data wrangling is the unsung hero that turns chaotic tr
   - Generates visualizations (Plotly heatmaps) of fraud hotspots.  
 
 ### *2. Customer Segmentation*  
-- *Problem*: Banks struggle to tailor products for SA’s diverse market.  
+- *Problem*: Banks struggle to tailor products for SA's diverse market.  
 - *Agent Solution*:  
   - Segments customers by spending_behavior (e.g., "Gauteng tech workers who shop at Woolworths").  
   - Identifies opportunities for targeted loans or savings plans.  
@@ -151,34 +151,44 @@ In the financial sector, data wrangling is the unsung hero that turns chaotic tr
 --- 
 
 *TL;DR: This agent is like a *financial data whisperer—turning chaotic rand-and-cent entries into insights that even a Johannesburg stock trader would high-five you for. 🚀💸
+
 ---
 
 ## 🛠 Setup Instructions  
 ### 1. Clone & Install  
-bash  
+```bash  
 git clone https://github.com/ZolisaSilolo/AI_Data_Analytics-Agent.git  
 cd AI_Data_Analytics_Agent  
 pip install -r requirements.txt  # Pro tip: Run this before load-shedding Stage 6.  
-  
+```  
 
 ### 2. AWS Configuration  
-bash  
+```bash  
 aws configure  # Use IAM keys, not your house keys! 🗝  
-  
+```  
 
 ### 3. Deploy Like a Pro  
-bash  
+```bash  
 sam build  
 sam deploy --guided  # Easier than parallel parking in Sandton.  
-  
+```  
 
 ---
 
 ## 📊 Testing  
 Run tests to ensure your agent is as reliable as a bakkie on a farm:  
-bash  
+```bash  
 pytest src/tests  # If it fails, blame the Wi-Fi, not the code.  
-  
+```  
+
+---
+
+## 🆕 New Features (2023 Update)
+- **Enhanced Visualizations**: Added support for heatmaps, bar charts, and scatter plots using Seaborn and Matplotlib
+- **Improved Error Handling**: Robust error handling with detailed logging for better debugging
+- **Type Hints**: Added Python type hints throughout the codebase for better IDE support and code quality
+- **Performance Metrics**: Added CloudWatch metrics for monitoring execution time and success rates
+- **Expanded Test Coverage**: Comprehensive test suite for all components
 
 ---
 
@@ -195,6 +205,6 @@ MIT License – Free to use, like a walk on Camps Bay Beach.
 
 ---
 
-*Now go forth, crunch data, and may your insights shine brighter than Table Mountain’s golden hour!* 🌟  
+*Now go forth, crunch data, and may your insights shine brighter than Table Mountain's golden hour!* 🌟  
 
 Disclaimer: No spreadsheets were harmed, but several outdated Excel macros retired to a beach in Umhlanga. 🏖
