@@ -1,0 +1,16 @@
+date,product,sales,region,category,profit_margin
+2024-01-01,Widget A,1250.50,North,Electronics,0.25
+2024-01-02,Widget B,890.25,South,Electronics,0.30
+2024-01-03,Gadget X,2100.00,East,Electronics,0.20
+2024-01-04,Tool Y,450.75,West,Hardware,0.35
+2024-01-05,Widget A,1100.00,North,Electronics,0.25
+2024-01-06,Service Z,750.00,South,Services,0.60
+2024-01-07,Gadget X,1950.00,East,Electronics,0.20
+2024-01-08,Widget B,920.50,West,Electronics,0.30
+2024-01-09,Tool Y,380.25,North,Hardware,0.35
+2024-01-10,Service Z,850.00,South,Services,0.60
+2024-01-11,Widget A,1300.75,East,Electronics,0.25
+2024-01-12,Gadget X,2250.00,West,Electronics,0.20
+2024-01-13,Tool Y,425.50,North,Hardware,0.35
+2024-01-14,Service Z,900.00,East,Services,0.60
+2024-01-15,Widget B,875.25,South,Electronics,0.30
