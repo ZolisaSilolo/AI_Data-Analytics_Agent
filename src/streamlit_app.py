@@ -1,25 +1,14 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import matplotlib.pyplot as plt
-import seaborn as sns
-import io
-import base64
 import os
 import json
-import boto3
 from dotenv import load_dotenv
 from typing import Dict, Any, List, Optional, Union
 import time
 
-# Import local modules
-from agent.tools import (
-    generate_plot, 
-    generate_bar_chart, 
-    generate_heatmap, 
-    summarize_data, 
-    detect_outliers
-)
+# Import consolidated modules
+from core.data_handler import DataHandler
+from core.visualizations import VisualizationGenerator
 from nvidia_integration import NemotronAnalyzer
 
 # Load environment variables
@@ -38,16 +27,123 @@ if "data" not in st.session_state:
     st.session_state.data = None
 if "analysis_results" not in st.session_state:
     st.session_state.analysis_results = None
-if "chart_type" not in st.session_state:
-    st.session_state.chart_type = "histogram"
 
-# Function to load data from file
 def load_data_from_file(uploaded_file):
+    """Load data from uploaded file"""
     try:
         if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
         elif uploaded_file.name.endswith(('.xls', '.xlsx')):
             df = pd.read_excel(uploaded_file)
+        else:
+            st.error("Unsupported file format. Please upload CSV or Excel files.")
+            return None
+        return df
+    except Exception as e:
+        st.error(f"Error loading file: {str(e)}")
+        return None
+
+def main():
+    st.title("🦁 Pandas Data Analyst Agent")
+    st.markdown("AI-powered data analysis with NVIDIA Nemotron")
+    
+    # Sidebar for configuration
+    with st.sidebar:
+        st.header("Configuration")
+        
+        # Data source selection
+        data_source = st.radio("Data Source", ["Upload File", "S3 Bucket"])
+        
+        if data_source == "Upload File":
+            uploaded_file = st.file_uploader("Choose a file", type=['csv', 'xlsx', 'xls'])
+            if uploaded_file:
+                st.session_state.data = load_data_from_file(uploaded_file)
+        
+        elif data_source == "S3 Bucket":
+            bucket_name = st.text_input("S3 Bucket Name", value=os.environ.get("DATA_BUCKET", ""))
+            object_key = st.text_input("Object Key", value="datasets/my_data.csv")
+            
+            if st.button("Load from S3") and bucket_name and object_key:
+                try:
+                    data_handler = DataHandler()
+                    st.session_state.data = data_handler.load_from_s3(bucket_name, object_key)
+                    st.success("Data loaded successfully!")
+                except Exception as e:
+                    st.error(f"Error loading from S3: {str(e)}")
+    
+    # Main content area
+    if st.session_state.data is not None:
+        df = st.session_state.data
+        
+        # Display data overview
+        st.subheader("Data Overview")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Rows", len(df))
+        with col2:
+            st.metric("Columns", len(df.columns))
+        with col3:
+            st.metric("Memory Usage", f"{df.memory_usage(deep=True).sum() / 1024:.1f} KB")
+        
+        # Display sample data
+        st.subheader("Sample Data")
+        st.dataframe(df.head())
+        
+        # Analysis section
+        st.subheader("AI Analysis")
+        
+        query = st.text_area("Ask a question about your data:", 
+                           placeholder="e.g., What are the main trends in this dataset?")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            chart_type = st.selectbox("Chart Type", 
+                                    ["histogram", "bar", "scatter", "line", "heatmap"])
+        
+        with col2:
+            if chart_type in ["bar", "scatter", "line"]:
+                x_column = st.selectbox("X Column", df.columns)
+                y_column = st.selectbox("Y Column", df.columns)
+            else:
+                x_column = st.selectbox("Column", df.columns) if chart_type == "histogram" else None
+                y_column = None
+        
+        if st.button("Analyze", type="primary"):
+            if query:
+                with st.spinner("Analyzing data..."):
+                    try:
+                        # Initialize analyzer
+                        analyzer = NemotronAnalyzer()
+                        
+                        # Generate analysis
+                        analysis_result = analyzer.analyze_data(df, query)
+                        
+                        # Generate visualization
+                        viz_generator = VisualizationGenerator()
+                        chart_bytes = viz_generator.generate_chart(df, chart_type, x_column, y_column)
+                        
+                        # Display results
+                        st.subheader("Analysis Results")
+                        st.write(analysis_result["analysis"])
+                        
+                        st.subheader("Visualization")
+                        st.image(chart_bytes, caption=f"{chart_type.title()} Chart")
+                        
+                        # Display metrics
+                        st.info(f"Token usage: {analysis_result.get('token_usage', 'N/A')}")
+                        
+                    except Exception as e:
+                        st.error(f"Analysis failed: {str(e)}")
+            else:
+                st.warning("Please enter a query to analyze the data.")
+    
+    else:
+        st.info("Please upload a file or load data from S3 to get started.")
+
+if __name__ == "__main__":
+    main()
         else:
             st.error("Unsupported file format. Please upload a CSV or Excel file.")
             return None

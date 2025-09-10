@@ -7,7 +7,10 @@ Parameters:
   Environment:
     Type: String
     Default: dev
-    AllowedValues: [dev, staging, prod]
+    AllowedValues:
+      - dev
+      - staging
+      - prod
 
 Globals:
   Function:
@@ -44,7 +47,9 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select [0, !GetAZs '']
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-private-subnet-1
@@ -54,7 +59,9 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.2.0/24
-      AvailabilityZone: !Select [1, !GetAZs '']
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-private-subnet-2
@@ -104,17 +111,18 @@ Resources:
       StageName: Prod
       AccessLogSetting:
         DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
-        Format: '$requestId $requestTime $httpMethod $resourcePath $status $responseLength $requestTime'
+        Format: $requestId $requestTime $httpMethod $resourcePath $status
+          $responseLength $requestTime
       MethodSettings:
-        - ResourcePath: '/*'
+        - ResourcePath: /*
           HttpMethod: '*'
           LoggingLevel: INFO
           DataTraceEnabled: true
           MetricsEnabled: true
       Cors:
-        AllowMethods: "'POST,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'*'"
+        AllowMethods: '''POST,OPTIONS'''
+        AllowHeaders: '''Content-Type,Authorization'''
+        AllowOrigin: '''*'''
 
   ApiGatewayUsagePlan:
     Type: AWS::ApiGateway::UsagePlan
@@ -208,7 +216,7 @@ Outputs:
     Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/analyze
     Export:
       Name: !Sub ${AWS::StackName}-ApiUrl
-  
+
   DataBucket:
     Description: S3 data bucket
     Value: !Ref DataBucket
