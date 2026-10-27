@@ -14,10 +14,9 @@ aws-lambda-powertools>=3.0.0
 # LLM & Agent Framework
 pydantic>=2.9.2
 
-# Visualizations & Frontend
+# Visualizations (Backend export)
 plotly>=5.24.1
 altair>=5.4.1
-streamlit>=1.39.0
 
 # Browser Automation & Playwright
 playwright>=1.47.0

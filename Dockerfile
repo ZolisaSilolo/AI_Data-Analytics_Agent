@@ -1,19 +1,14 @@
-FROM python:3.10-slim
+# AWS Lambda Python Container Image for OmniAnalyst Backend
+FROM public.ecr.aws/lambda/python:3.12
 
-WORKDIR /app
-
-# Copy requirements first for better caching
+# Copy requirements
 COPY requirements.txt .
+
+# Install dependencies into container
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
-COPY . .
+# Copy backend source code
+COPY src/ ${LAMBDA_TASK_ROOT}
 
-# Expose the port Streamlit runs on
-EXPOSE 8501
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-
-# Run the Streamlit app
-CMD ["streamlit", "run", "src/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Set the Lambda handler
+CMD ["lambda_function.lambda_handler"]
