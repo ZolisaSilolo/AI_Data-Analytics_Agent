@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "OmniAnalyst - AI Data Analyst Companion",
+  "version": "2.0.0",
+  "description": "Deterministic, Bedrock-powered Data Analyst companion. Extract web tables, execute verified SQL/Polars calculations, and view instant charts in any browser tab.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open OmniAnalyst Sidepanel"
+  }
+}

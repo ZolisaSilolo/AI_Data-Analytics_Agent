@@ -1,62 +1,170 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+Description: OmniAnalyst - Well-Architected, Scale-to-Zero Deterministic Data Analyst Platform
 
-Description: Pandas Data Analyst Agent
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 2048
+    Runtime: python3.12
+    Architectures:
+      - arm64  # Graviton for 20% lower cost and higher compute efficiency
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        DATA_BUCKET: !Ref DataLakehouseBucket
+        CONVERSATION_TABLE: !Ref ConversationAuditTable
+        BEDROCK_PRIMARY_MODEL: 'anthropic.claude-3-5-sonnet-20241022-v2:0'
+        BEDROCK_FALLBACK_MODEL: 'amazon.nova-pro-v1:0'
+        POWERTOOLS_SERVICE_NAME: 'data-analyst-agent'
+        LOG_LEVEL: 'INFO'
 
 Resources:
+  # --------------------------------------------------------------------------
+  # 1. Scale-to-Zero HTTP API Gateway
+  # --------------------------------------------------------------------------
+  HttpApiGateway:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Environment
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - x-correlation-id
+        MaxAge: 300
+
+  # --------------------------------------------------------------------------
+  # 2. Main Serverless Data Analyst Lambda Function
+  # --------------------------------------------------------------------------
   DataAnalystFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: PandasDataAnalystAgent
-      Handler: app.lambda_handler
-      Runtime: python3.12.6
+      FunctionName: !Sub ${AWS::StackName}-orchestrator
       CodeUri: src/
-      MemorySize: 1024
-      Timeout: 30
+      Handler: lambda_function.lambda_handler
       Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref DataBucket
-      Environment:
-        Variables:
-          OPENAI_API_KEY: !Sub '{{resolve:secretsmanager:${OpenAISecret}}}'
-          DATA_BUCKET: !Ref Bucket
+        # S3 Read/Write for analytical datasets and visual artifacts
+        - S3CrudPolicy:
+            BucketName: !Ref DataLakehouseBucket
+        # DynamoDB Read/Write for conversation and audit trails
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConversationAuditTable
+        # Bedrock InvokeModel / Converse permissions
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+                - bedrock:Converse
+                - bedrock:ConverseStream
+              Resource: '*'
       Events:
-        ApiGateway:
-          Type: Api
+        AnalyzeRoute:
+          Type: HttpApi
           Properties:
+            ApiId: !Ref HttpApiGateway
             Path: /analyze
             Method: POST
-  Bucket:
+        QueryRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /query
+            Method: POST
+        BrowserRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /browser/extract
+            Method: POST
+
+  # --------------------------------------------------------------------------
+  # 3. Serverless Storage: S3 Lakehouse Bucket ($0 Idle Cost)
+  # --------------------------------------------------------------------------
+  DataLakehouseBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub ${AWS::StackName}-bucket-${AWS::AccountId}
+      BucketName: !Sub ${AWS::StackName}-lakehouse-${AWS::AccountId}
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: aws:kms
-              KMSMasterKeyID: alias/aws/s3
+              SSEAlgorithm: AES256
       PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  BucketBucketPolicy:
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireTempChartsAfter14Days
+            Status: Enabled
+            Prefix: charts/
+            ExpirationInDays: 14
+
+  BucketSecurePolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref Bucket
+      Bucket: !Ref DataLakehouseBucket
       PolicyDocument:
-        Id: RequireEncryptionInTransit
         Version: '2012-10-17'
         Statement:
-          - Principal: '*'
-            Action: '*'
+          - Sid: EnforceTlsOnly
             Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
             Resource:
-              - !GetAtt Bucket.Arn
-              - !Sub ${Bucket.Arn}/*
+              - !GetAtt DataLakehouseBucket.Arn
+              - !Sub ${DataLakehouseBucket.Arn}/*
             Condition:
               Bool:
                 aws:SecureTransport: 'false'
 
+  # --------------------------------------------------------------------------
+  # 4. DynamoDB Audit Table: PAY_PER_REQUEST ($0 Idle Cost)
+  # --------------------------------------------------------------------------
+  ConversationAuditTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-audit
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: session_id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: 'N'
+      KeySchema:
+        - AttributeName: session_id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
 Outputs:
-  ApiUrl:
-    Description: API endpoint
-    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/analyze
+  ApiEndpoint:
+    Description: HTTP API Gateway base endpoint (scales to zero)
+    Value: !Sub https://${HttpApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+
+  DataBucketName:
+    Description: S3 Lakehouse Bucket Name
+    Value: !Ref DataLakehouseBucket
+
+  DynamoAuditTable:
+    Description: DynamoDB Pay-per-Request Audit Table
+    Value: !Ref ConversationAuditTable

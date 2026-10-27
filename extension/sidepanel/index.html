@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OmniAnalyst Companion</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span class="icon">🦁</span>
+        <h2>OmniAnalyst</h2>
+      </div>
+      <span class="badge">AWS Bedrock</span>
+    </header>
+
+    <div class="config-section">
+      <label for="apiUrl">API Gateway URL:</label>
+      <input type="text" id="apiUrl" placeholder="https://api.execute-api.../analyze">
+      <button id="btnSaveConfig" class="btn-secondary">Save</button>
+    </div>
+
+    <div class="action-bar">
+      <button id="btnScrapePage" class="btn-primary">📊 Extract Current Tab Data</button>
+    </div>
+
+    <div id="statusBox" class="status-box hidden"></div>
+
+    <div class="chat-section">
+      <h3>Ask Bedrock Analyst</h3>
+      <textarea id="txtQuery" placeholder="e.g., Analyze the churn rate and identify outliers across the extracted dataset..."></textarea>
+      <button id="btnAnalyze" class="btn-primary">🚀 Run Deterministic Analysis</button>
+    </div>
+
+    <div class="results-section">
+      <div id="analysisOutput" class="analysis-output">Ready to analyze.</div>
+      <div id="chartContainer" class="chart-container"></div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
