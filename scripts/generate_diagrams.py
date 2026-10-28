@@ -14,6 +14,7 @@ codebase: 11 typed tools, semantic catalogue, schema card, claim verification,
 """
 
 import os
+import re
 
 import matplotlib
 
@@ -55,12 +56,33 @@ def new_figure():
     return fig, ax
 
 
+_PT_SIZE_RE = re.compile(r'(width|height)="(\d+(?:\.\d+)?)pt"')
+
+
+def _normalize_svg(path: str) -> None:
+    """
+    Make the matplotlib SVG portable.
+
+    Matplotlib writes the root size in points (``width="1152pt"``), which strict
+    SVG engines (resvg, Inkscape, some browser pipelines) reject as an invalid
+    size. Replacing the units with plain user units keeps the 1:1 viewBox scale
+    and renders everywhere.
+    """
+    with open(path, encoding="utf-8") as handle:
+        content = handle.read()
+    fixed = _PT_SIZE_RE.sub(lambda match: f'{match.group(1)}="{match.group(2)}"', content)
+    if fixed != content:
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(fixed)
+
+
 def save(fig, stem):
     png_path = os.path.join(OUTPUT_DIR, f"{stem}.png")
     svg_path = os.path.join(OUTPUT_DIR, f"{stem}.svg")
     fig.savefig(png_path, dpi=200, facecolor=fig.get_facecolor(), edgecolor="none")
     fig.savefig(svg_path, format="svg", facecolor=fig.get_facecolor(), edgecolor="none")
     plt.close(fig)
+    _normalize_svg(svg_path)
     print(f"Generated: {png_path} and {svg_path}")
 
 
