@@ -81,12 +81,15 @@ Key properties:
 | Result storage | S3 JSON artifact (DynamoDB items are capped at 400 KB) |
 | Frontend | Static React 18 + Vite bundle on Amplify Hosting with a CSP |
 
-Diagrams (PNG + SVG) live in [`generated-diagrams/`](generated-diagrams/) and are produced by
-[`scripts/generate_diagrams.py`](scripts/generate_diagrams.py):
+Diagrams (PNG + SVG + Mermaid) live in [`generated-diagrams/`](generated-diagrams/) and are
+produced by [`scripts/generate_diagrams.py`](scripts/generate_diagrams.py):
 
 - `architecture_overview.*` — stakeholder-level workflow
 - `detailed_infrastructure.*` — the AWS resource map above
 - `data_flow_architecture.*` — the execution pipeline and statistical gates
+- `determinism_contract.*` — planner/executor separation, plan IR and the five rules
+- `mermaid-*.md` — the same diagrams as Mermaid sources (render on GitHub / editors)
+- `index.html` — open locally to view every artifact in one page
 
 ---
 
