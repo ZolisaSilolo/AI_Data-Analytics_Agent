@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <title>OmniAnalyst Companion</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <!-- Vendored: Manifest V3 forbids remotely hosted scripts. -->
+  <script src="../vendor/plotly.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -17,8 +18,8 @@
     </header>
 
     <div class="config-section">
-      <label for="apiUrl">API Gateway URL:</label>
-      <input type="text" id="apiUrl" placeholder="https://api.execute-api.../analyze">
+      <label for="apiUrl">API base URL:</label>
+      <input type="text" id="apiUrl" placeholder="https://abc123.execute-api.us-east-1.amazonaws.com/dev">
       <button id="btnSaveConfig" class="btn-secondary">Save</button>
     </div>
 
@@ -30,7 +31,7 @@
 
     <div class="chat-section">
       <h3>Ask Bedrock Analyst</h3>
-      <textarea id="txtQuery" placeholder="e.g., Analyze the churn rate and identify outliers across the extracted dataset..."></textarea>
+      <textarea id="txtQuery" placeholder="e.g., Analyze the churn rate and identify outliers across the extracted table..."></textarea>
       <button id="btnAnalyze" class="btn-primary">🚀 Run Deterministic Analysis</button>
     </div>
 

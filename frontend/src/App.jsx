@@ -5,13 +5,22 @@ import AnalysisConsole from './components/AnalysisConsole.jsx';
 import ExecutionTrace from './components/ExecutionTrace.jsx';
 import ChartViewer from './components/ChartViewer.jsx';
 import DisciplineTools from './components/DisciplineTools.jsx';
-import { Table, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+
+function readStoredEndpoint() {
+  try {
+    return localStorage.getItem('omni.apiEndpoint') || '';
+  } catch {
+    return '';
+  }
+}
 
 export default function App() {
-  const [apiEndpoint, setApiEndpoint] = useState(
-    import.meta.env.VITE_API_ENDPOINT || 'https://api.execute-api.us-east-1.amazonaws.com/dev'
+  const [apiEndpoint, setApiEndpointState] = useState(
+    import.meta.env.VITE_API_ENDPOINT || readStoredEndpoint()
   );
-  const [selectedModel, setSelectedModel] = useState('anthropic.claude-3-5-sonnet-20241022-v2:0');
+  const setApiEndpoint = (value) => setApiEndpointState(value);
+  const [selectedModel, setSelectedModel] = useState('global.moonshotai.kimi-k3');
   const [selectedDiscipline, setSelectedDiscipline] = useState('General Exploratory');
   const [dataset, setDataset] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -22,6 +31,12 @@ export default function App() {
     setToast({ message, isError });
     setTimeout(() => setToast(null), 4500);
   };
+
+  // The API now returns a real profile; prefer it over the upload placeholder.
+  const displayRows = dataset?.rowCount ?? analysisResult?.dataset?.row_count ?? null;
+  const displayCols = dataset?.headers?.length ?? analysisResult?.dataset?.columns?.length ?? null;
+  const verification = analysisResult?.verification;
+  const warnings = analysisResult?.warnings || [];
 
   return (
     <div className="app-container">
@@ -67,21 +82,37 @@ export default function App() {
         </aside>
 
         <main className="content">
+          {!apiEndpoint && (
+            <div className="card" style={{ borderColor: '#f59e0b', marginBottom: '16px' }}>
+              <div className="card-title" style={{ color: '#fbbf24' }}>
+                <AlertCircle size={16} /> API endpoint not configured
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Set <code>VITE_API_ENDPOINT</code> at build time (Amplify environment variable) or
+                open the API settings in development.
+              </p>
+            </div>
+          )}
+
           {/* Top Metrics Row */}
           {dataset && (
             <div className="metrics-grid">
               <div className="metric-card">
                 <span>Total Rows</span>
-                <h3>{dataset.rowCount?.toLocaleString() || 0}</h3>
+                <h3>{displayRows != null ? displayRows.toLocaleString() : '—'}</h3>
               </div>
               <div className="metric-card">
                 <span>Columns</span>
-                <h3>{dataset.headers?.length || 0}</h3>
+                <h3>{displayCols ?? '—'}</h3>
               </div>
               <div className="metric-card">
                 <span>Active Model</span>
                 <h3 style={{ fontSize: '14px', marginTop: '8px' }}>
-                  {selectedModel.includes('claude') ? 'Claude 3.5 Sonnet' : 'Amazon Nova Pro'}
+                  {selectedModel.includes('claude')
+                    ? 'Claude Sonnet 4.5'
+                    : selectedModel.includes('moonshot')
+                      ? 'Kimi K3'
+                      : 'Amazon Nova Pro'}
                 </h3>
               </div>
               <div className="metric-card">
@@ -137,9 +168,39 @@ export default function App() {
             <div className="card">
               <div className="card-title">Executive Analytical Synthesis</div>
               {analysisResult ? (
-                <div style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                  {analysisResult.analysis}
-                </div>
+                <>
+                  <div style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {analysisResult.analysis}
+                  </div>
+
+                  {verification && (
+                    <div style={{
+                      marginTop: '14px',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      border: `1px solid ${verification.status === 'PASS' ? '#065f46' : '#7f1d1d'}`,
+                      background: verification.status === 'PASS' ? '#022c22' : '#2a0a0a',
+                      color: verification.status === 'PASS' ? '#34d399' : '#fca5a5',
+                    }}>
+                      {verification.status === 'PASS'
+                        ? `✓ Evidence check: ${verification.supported}/${verification.checked} numbers verified against tool outputs`
+                        : verification.status === 'NO_CLAIMS'
+                          ? 'Evidence check: narrative contains no numbers'
+                          : `⚠ Evidence check: ${verification.unsupported_count} unsupported number(s) — review before sharing`}
+                    </div>
+                  )}
+
+                  {warnings.map((warning, index) => (
+                    <div key={index} style={{
+                      marginTop: '8px',
+                      fontSize: '11px',
+                      color: '#fbbf24',
+                    }}>
+                      ⚠ {warning}
+                    </div>
+                  ))}
+                </>
               ) : (
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                   Submit an analytical inquiry above to generate a synthesized executive report.
@@ -164,31 +225,23 @@ export default function App() {
           {/* Tab 4: Data Preview */}
           {activeTab === 'preview' && (
             <div className="card">
-              <div className="card-title">Dataset Sample Preview</div>
-              {dataset?.sampleRows && dataset.sampleRows.length > 0 ? (
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        {dataset.headers?.map((h, i) => (
-                          <th key={i}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dataset.sampleRows.slice(0, 20).map((row, rIdx) => (
-                        <tr key={rIdx}>
-                          {dataset.headers?.map((h, cIdx) => (
-                            <td key={cIdx}>{row[h] !== null ? String(row[h]) : '-'}</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              <div className="card-title">
+                Dataset Sample Preview
+              </div>
+              {analysisResult?.dataset ? (
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                  <div><strong style={{ color: 'var(--text-primary)' }}>Dataset:</strong> {analysisResult.dataset.key || 'browser-extracted table'}</div>
+                  <div><strong style={{ color: 'var(--text-primary)' }}>Rows:</strong> {analysisResult.dataset.row_count?.toLocaleString()}</div>
+                  <div><strong style={{ color: 'var(--text-primary)' }}>Columns:</strong> {analysisResult.dataset.columns?.join(', ')}</div>
+                  <p style={{ marginTop: '10px' }}>
+                    Row previews are not returned by the API to keep payloads small. Use the
+                    Execution Trace tab to inspect the exact SQL and invariant checks.
+                  </p>
                 </div>
               ) : (
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  Upload a dataset or extract tables from a web URL to preview records.
+                  Upload a dataset or extract tables with the browser extension, then run an
+                  analysis to see its schema.
                 </p>
               )}
             </div>

@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "OmniAnalyst - AI Data Analyst Companion",
-  "version": "2.0.0",
-  "description": "Deterministic, Bedrock-powered Data Analyst companion. Extract web tables, execute verified SQL/Polars calculations, and view instant charts in any browser tab.",
+  "version": "2.1.0",
+  "description": "Extract tables from any tab and run deterministic, SQL-verified analysis on Amazon Bedrock. Charts render locally; no remote code.",
+  "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
     "scripting",

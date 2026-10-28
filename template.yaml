@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: OmniAnalyst - Well-Architected, Scale-to-Zero Deterministic Data Analyst Platform
+Description: OmniAnalyst - scale-to-zero deterministic data analyst platform
 
 Parameters:
   Environment:
@@ -8,26 +8,75 @@ Parameters:
     Default: dev
     AllowedValues: [dev, staging, prod]
 
+  AllowedOrigin:
+    Type: String
+    Default: http://localhost:5173
+    Description: Exact browser origin allowed to call the API (your Amplify domain in production).
+
+  BedrockModelId:
+    Type: String
+    Default: global.moonshotai.kimi-k3
+    Description: >-
+      Interim verified model (Converse + tool use confirmed in us-east-1).
+      Switch to global.anthropic.claude-sonnet-4-5-20250929-v1:0 once Anthropic
+      use-case details are approved for the account.
+
+  BedrockFallbackModelId:
+    Type: String
+    Default: ''
+    Description: Optional fallback model for access/validation errors. Leave empty to disable failover.
+
+  BedrockAllowedModels:
+    Type: String
+    Default: ''
+    Description: >-
+      Optional comma-separated model ids callers may request, on top of the one
+      verified model in this build (global.moonshotai.kimi-k3) plus the primary
+      and fallback configured below. Leave empty to accept only those.
+
+  AppVersion:
+    Type: String
+    Default: 0.1.0
+
+  LambdaArchitecture:
+    Type: String
+    Default: arm64
+    AllowedValues: [arm64, x86_64]
+    Description: Graviton by default. Switch to x86_64 only if your build host cannot cross-build arm64 images.
+
 Globals:
   Function:
-    Timeout: 120
-    MemorySize: 2048
-    Runtime: python3.12
     Architectures:
-      - arm64  # Graviton for 20% lower cost and higher compute efficiency
+      - !Ref LambdaArchitecture
+    Tracing: Active
+    MemorySize: 1024
     Environment:
       Variables:
         ENVIRONMENT: !Ref Environment
+        STAGE_NAME: !Ref Environment
         DATA_BUCKET: !Ref DataLakehouseBucket
-        CONVERSATION_TABLE: !Ref ConversationAuditTable
-        BEDROCK_PRIMARY_MODEL: 'anthropic.claude-3-5-sonnet-20241022-v2:0'
-        BEDROCK_FALLBACK_MODEL: 'amazon.nova-pro-v1:0'
-        POWERTOOLS_SERVICE_NAME: 'data-analyst-agent'
-        LOG_LEVEL: 'INFO'
+        JOBS_TABLE: !Ref AnalysisJobsTable
+        ANALYSIS_QUEUE_URL: !Ref AnalysisQueue
+        BEDROCK_PRIMARY_MODEL: !Ref BedrockModelId
+        BEDROCK_FALLBACK_MODEL: !Ref BedrockFallbackModelId
+        BEDROCK_ALLOWED_MODELS: !Ref BedrockAllowedModels
+        ALLOWED_ORIGIN: !Ref AllowedOrigin
+        APP_VERSION: !Ref AppVersion
+        POWERTOOLS_SERVICE_NAME: data-analyst-agent
+        LOG_LEVEL: INFO
+        MAX_UPLOAD_BYTES: '52428800'
+        MAX_QUERY_CHARS: '4000'
+        MAX_SQL_CHARS: '20000'
+        MAX_PAGE_CONTEXT_BYTES: '200000'
+        PRESIGN_EXPIRES_SECONDS: '900'
+        JOB_TTL_DAYS: '90'
+        # Kept in sync with AnalysisQueue.RedrivePolicy.maxReceiveCount so the
+        # final delivery is the one that writes a terminal FAILED state.
+        MAX_RECEIVE_COUNT: '3'
 
 Resources:
   # --------------------------------------------------------------------------
-  # 1. Scale-to-Zero HTTP API Gateway
+  # 1. HTTP API (thin ingress, short integration)
   # --------------------------------------------------------------------------
   HttpApiGateway:
     Type: AWS::Serverless::HttpApi
@@ -35,43 +84,56 @@ Resources:
       StageName: !Ref Environment
       CorsConfiguration:
         AllowOrigins:
-          - '*'
-        AllowMethods:
-          - GET
-          - POST
-          - OPTIONS
+          - !Ref AllowedOrigin
+        AllowMethods: [GET, POST, OPTIONS]
         AllowHeaders:
           - Content-Type
           - Authorization
+          - x-tenant-id
+          - x-idempotency-key
           - x-correlation-id
         MaxAge: 300
 
   # --------------------------------------------------------------------------
-  # 2. Main Serverless Data Analyst Lambda Function
+  # 2. API Lambda (validation + enqueue only, 10s budget)
   # --------------------------------------------------------------------------
-  DataAnalystFunction:
+  ApiFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: .
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-orchestrator
-      CodeUri: src/
-      Handler: lambda_function.lambda_handler
+      PackageType: Image
+      FunctionName: !Sub ${AWS::StackName}-api
+      Timeout: 10
+      MemorySize: 512
       Policies:
-        # S3 Read/Write for analytical datasets and visual artifacts
-        - S3CrudPolicy:
-            BucketName: !Ref DataLakehouseBucket
-        # DynamoDB Read/Write for conversation and audit trails
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ConversationAuditTable
-        # Bedrock InvokeModel / Converse permissions
         - Statement:
             - Effect: Allow
-              Action:
-                - bedrock:InvokeModel
-                - bedrock:InvokeModelWithResponseStream
-                - bedrock:Converse
-                - bedrock:ConverseStream
-              Resource: '*'
+              Action: [s3:GetObject, s3:PutObject]
+              Resource: !Sub ${DataLakehouseBucket.Arn}/uploads/*
+            - Effect: Allow
+              Action: [s3:GetObject]
+              Resource: !Sub ${DataLakehouseBucket.Arn}/artifacts/*
+            - Effect: Allow
+              Action: [sqs:SendMessage]
+              Resource: !GetAtt AnalysisQueue.Arn
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:Query]
+              Resource: !GetAtt AnalysisJobsTable.Arn
       Events:
+        HealthRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /health
+            Method: GET
+        PresignRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApiGateway
+            Path: /upload/presign
+            Method: POST
         AnalyzeRoute:
           Type: HttpApi
           Properties:
@@ -84,35 +146,122 @@ Resources:
             ApiId: !Ref HttpApiGateway
             Path: /query
             Method: POST
-        BrowserRoute:
+        JobRoute:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApiGateway
-            Path: /browser/extract
-            Method: POST
+            Path: /jobs/{job_id}
+            Method: GET
 
   # --------------------------------------------------------------------------
-  # 3. Serverless Storage: S3 Lakehouse Bucket ($0 Idle Cost)
+  # 3. Worker Lambda (SQS, 300s budget, Bedrock + DuckDB)
+  # --------------------------------------------------------------------------
+  WorkerFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: .
+    Properties:
+      PackageType: Image
+      FunctionName: !Sub ${AWS::StackName}-worker
+      Timeout: 300
+      MemorySize: 3008
+      ReservedConcurrentExecutions: 10
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [s3:GetObject, s3:PutObject]
+              Resource:
+                - !Sub ${DataLakehouseBucket.Arn}/uploads/*
+                - !Sub ${DataLakehouseBucket.Arn}/artifacts/*
+            - Effect: Allow
+              Action: [sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes]
+              Resource: !GetAtt AnalysisQueue.Arn
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem]
+              Resource: !GetAtt AnalysisJobsTable.Arn
+            - Effect: Allow
+              Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
+              Resource:
+                - !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*
+                - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
+      Events:
+        AnalysisQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AnalysisQueue.Arn
+            BatchSize: 1
+            # The handler returns failed message ids instead of raising, so a
+            # poison message is retried per redrive policy rather than failing
+            # the whole batch.
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
+  # --------------------------------------------------------------------------
+  # 4. Queue + DLQ (job isolation, retries, poison-message capture)
+  # --------------------------------------------------------------------------
+  AnalysisQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-analysis
+      VisibilityTimeout: 360
+      MessageRetentionPeriod: 3600
+      ReceiveMessageWaitTimeSeconds: 10
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AnalysisDLQ.Arn
+        maxReceiveCount: 3
+
+  AnalysisDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-analysis-dlq
+      MessageRetentionPeriod: 1209600
+
+  # --------------------------------------------------------------------------
+  # 5. S3 lakehouse ($0 idle cost, tenant-scoped prefixes)
   # --------------------------------------------------------------------------
   DataLakehouseBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${AWS::StackName}-lakehouse-${AWS::AccountId}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - !Ref AllowedOrigin
+            AllowedMethods: [POST, PUT]
+            AllowedHeaders: [content-type]
+            MaxAge: 3000
       LifecycleConfiguration:
         Rules:
-          - Id: ExpireTempChartsAfter14Days
+          - Id: ExpireUploads
             Status: Enabled
-            Prefix: charts/
-            ExpirationInDays: 14
+            Prefix: uploads/
+            ExpirationInDays: 30
+          - Id: ExpireArtifacts
+            Status: Enabled
+            Prefix: artifacts/
+            # Matches JOB_TTL_DAYS so a job record never outlives its result by
+            # design; the API still degrades to RESULT_UNAVAILABLE if it does.
+            ExpirationInDays: 90
+          - Id: AbortIncompleteUploads
+            Status: Enabled
+            Prefix: uploads/
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
 
   BucketSecurePolicy:
     Type: AWS::S3::BucketPolicy
@@ -133,22 +282,22 @@ Resources:
                 aws:SecureTransport: 'false'
 
   # --------------------------------------------------------------------------
-  # 4. DynamoDB Audit Table: PAY_PER_REQUEST ($0 Idle Cost)
+  # 6. Job state (audit-safe status + artifact pointer)
   # --------------------------------------------------------------------------
-  ConversationAuditTable:
+  AnalysisJobsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub ${AWS::StackName}-audit
+      TableName: !Sub ${AWS::StackName}-jobs
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: session_id
+        - AttributeName: tenant_id
           AttributeType: S
-        - AttributeName: timestamp
-          AttributeType: 'N'
+        - AttributeName: job_id
+          AttributeType: S
       KeySchema:
-        - AttributeName: session_id
+        - AttributeName: tenant_id
           KeyType: HASH
-        - AttributeName: timestamp
+        - AttributeName: job_id
           KeyType: RANGE
       TimeToLiveSpecification:
         AttributeName: ttl
@@ -158,13 +307,17 @@ Resources:
 
 Outputs:
   ApiEndpoint:
-    Description: HTTP API Gateway base endpoint (scales to zero)
+    Description: HTTP API base endpoint (scale-to-zero)
     Value: !Sub https://${HttpApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
 
   DataBucketName:
-    Description: S3 Lakehouse Bucket Name
+    Description: S3 lakehouse bucket name
     Value: !Ref DataLakehouseBucket
 
-  DynamoAuditTable:
-    Description: DynamoDB Pay-per-Request Audit Table
-    Value: !Ref ConversationAuditTable
+  JobsTableName:
+    Description: DynamoDB analysis jobs table
+    Value: !Ref AnalysisJobsTable
+
+  AnalysisQueueUrl:
+    Description: SQS analysis queue URL
+    Value: !Ref AnalysisQueue

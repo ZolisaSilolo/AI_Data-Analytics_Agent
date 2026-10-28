@@ -1,6 +1,8 @@
 /**
  * OmniAnalyst Content Script
- * Scrapes HTML <table>, AG-Grid, TanStack, and canvas data from the active web dashboard.
+ *
+ * Injected on demand by the side panel (never declared as a static content
+ * script) so it only runs on tabs the user explicitly extracts from.
  */
 
 function extractTableData() {
@@ -9,17 +11,17 @@ function extractTableData() {
 
   tables.forEach((table, index) => {
     const headers = [];
-    table.querySelectorAll("th").forEach(th => {
+    table.querySelectorAll("th").forEach((th) => {
       headers.push(th.innerText.trim());
     });
 
     const rows = [];
-    table.querySelectorAll("tbody tr, tr").forEach(tr => {
+    table.querySelectorAll("tbody tr, tr").forEach((tr) => {
       const row = [];
-      tr.querySelectorAll("td").forEach(td => {
+      tr.querySelectorAll("td").forEach((td) => {
         row.push(td.innerText.trim());
       });
-      if (row.length > 0 && row.length === headers.length) {
+      if (row.length > 0 && (headers.length === 0 || row.length === headers.length)) {
         rows.push(row);
       }
     });
@@ -27,9 +29,10 @@ function extractTableData() {
     if (rows.length > 0) {
       extracted.push({
         tableIndex: index + 1,
-        headers: headers.length > 0 ? headers : rows[0].map((_, i) => `Column_${i+1}`),
+        headers: headers.length > 0 ? headers : rows[0].map((_, i) => `Column_${i + 1}`),
         rowCount: rows.length,
-        sampleRows: rows.slice(0, 100)
+        // Bounded so the API payload stays inside its size limit.
+        sampleRows: rows.slice(0, 200)
       });
     }
   });
@@ -42,10 +45,14 @@ function extractTableData() {
   };
 }
 
-// Listen for messages from the sidepanel
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "SCRAPE_PAGE_DATA") {
-    const result = extractTableData();
-    sendResponse(result);
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  if (request.action === "PING") {
+    sendResponse({ ok: true });
+    return false;
   }
+  if (request.action === "SCRAPE_PAGE_DATA") {
+    sendResponse(extractTableData());
+    return false;
+  }
+  return false;
 });

@@ -52,17 +52,11 @@ export default function ExecutionTrace({ toolExecutions, executionTimeSeconds })
                 )}
               </div>
 
-              {/* SQL or Code input */}
+              {/* SQL input (the only executable artifact the model produces) */}
               {t.input?.sql && (
                 <div style={{ marginBottom: '8px' }}>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Compiled SQL:</div>
                   <pre className="code-box">{t.input.sql}</pre>
-                </div>
-              )}
-              {t.input?.code && (
-                <div style={{ marginBottom: '8px' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Compiled Python:</div>
-                  <pre className="code-box">{t.input.code}</pre>
                 </div>
               )}
 

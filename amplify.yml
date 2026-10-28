@@ -3,10 +3,14 @@ frontend:
   phases:
     preBuild:
       commands:
+        # The Amplify app root is the repository root (monorepo), so the
+        # frontend directory must be entered explicitly in each phase.
         - cd frontend
-        - npm install
+        - nvm use 20 || true
+        - npm ci
     build:
       commands:
+        - cd frontend
         - npm run build
   artifacts:
     baseDirectory: frontend/dist

@@ -9,6 +9,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false
+    sourcemap: false,
+    // Plotly is dynamically imported by ChartViewer, so it is emitted as a
+    // separate on-demand chunk (~4.6 MB) instead of blocking first paint.
+    chunkSizeWarningLimit: 5000
   }
 });

@@ -6,9 +6,9 @@ echo "🚀 Setting up AI Data Analytics Agent..."
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
+# Install dependencies (runtime + test/lint tooling)
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 # Create .env from example if it doesn't exist
 if [ ! -f .env ]; then

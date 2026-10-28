@@ -1,0 +1,289 @@
+{
+  "version": 1,
+  "metrics": [
+    {
+      "name": "revenue",
+      "version": 1,
+      "unit": "currency",
+      "description": "Total recognised revenue in the reporting currency.",
+      "requires": ["revenue"],
+      "sql": "SUM(TRY_CAST({revenue} AS DOUBLE))",
+      "aliases": {
+        "revenue": ["amount", "total", "sales", "gross_revenue", "net_revenue", "mrr", "arr", "bookings"]
+      }
+    },
+    {
+      "name": "order_count",
+      "version": 1,
+      "unit": "count",
+      "description": "Number of rows that represent an order or transaction.",
+      "requires": [],
+      "sql": "COUNT(*)"
+    },
+    {
+      "name": "aov",
+      "version": 1,
+      "unit": "currency",
+      "description": "Average order value = revenue / orders.",
+      "formula": "revenue / NULLIF(order_count, 0)"
+    },
+    {
+      "name": "active_users",
+      "version": 1,
+      "unit": "count",
+      "description": "Distinct active users in the window.",
+      "requires": ["user_id"],
+      "sql": "COUNT(DISTINCT {user_id})",
+      "aliases": {
+        "user_id": ["user", "customer_id", "account_id", "member_id", "uid"]
+      }
+    },
+    {
+      "name": "visitors",
+      "version": 1,
+      "unit": "count",
+      "description": "Sum of visitors or sessions.",
+      "requires": ["visitors"],
+      "sql": "SUM(TRY_CAST({visitors} AS DOUBLE))",
+      "aliases": {
+        "visitors": ["sessions", "visits", "users", "traffic"]
+      }
+    },
+    {
+      "name": "conversions",
+      "version": 1,
+      "unit": "count",
+      "description": "Sum of conversions.",
+      "requires": ["conversions"],
+      "sql": "SUM(TRY_CAST({conversions} AS DOUBLE))",
+      "aliases": {
+        "conversions": ["converted", "purchases", "signups", "leads"]
+      }
+    },
+    {
+      "name": "conversion_rate",
+      "version": 1,
+      "unit": "ratio",
+      "description": "Conversions divided by visitors.",
+      "formula": "conversions / NULLIF(visitors, 0)"
+    },
+    {
+      "name": "starting_customers",
+      "version": 1,
+      "unit": "count",
+      "description": "Customers active at the start of the period.",
+      "requires": ["starting_customers"],
+      "sql": "SUM(TRY_CAST({starting_customers} AS DOUBLE))",
+      "aliases": {
+        "starting_customers": ["beginning_customers", "customers_start", "cohort_size"]
+      }
+    },
+    {
+      "name": "churned_customers",
+      "version": 1,
+      "unit": "count",
+      "description": "Customers lost during the period.",
+      "requires": ["churned_customers"],
+      "sql": "SUM(TRY_CAST({churned_customers} AS DOUBLE))",
+      "aliases": {
+        "churned_customers": ["churned", "cancellations", "lost_customers"]
+      }
+    },
+    {
+      "name": "churn_rate",
+      "version": 1,
+      "unit": "ratio",
+      "description": "Customer churn rate for the period.",
+      "formula": "churned_customers / NULLIF(starting_customers, 0)"
+    },
+    {
+      "name": "beginning_arr",
+      "version": 1,
+      "unit": "currency",
+      "description": "ARR at the start of the period.",
+      "requires": ["beginning_arr"],
+      "sql": "SUM(TRY_CAST({beginning_arr} AS DOUBLE))",
+      "aliases": {
+        "beginning_arr": ["start_arr", "opening_arr", "arr_start"]
+      }
+    },
+    {
+      "name": "expansion_arr",
+      "version": 1,
+      "unit": "currency",
+      "description": "Expansion ARR in the period.",
+      "requires": ["expansion_arr"],
+      "sql": "SUM(TRY_CAST({expansion_arr} AS DOUBLE))",
+      "aliases": {
+        "expansion_arr": ["upsell_arr", "expansion"]
+      }
+    },
+    {
+      "name": "contraction_arr",
+      "version": 1,
+      "unit": "currency",
+      "description": "Contraction ARR in the period.",
+      "requires": ["contraction_arr"],
+      "sql": "SUM(TRY_CAST({contraction_arr} AS DOUBLE))",
+      "aliases": {
+        "contraction_arr": ["downgrade_arr", "contraction"]
+      }
+    },
+    {
+      "name": "churned_arr",
+      "version": 1,
+      "unit": "currency",
+      "description": "Churned ARR in the period.",
+      "requires": ["churned_arr"],
+      "sql": "SUM(TRY_CAST({churned_arr} AS DOUBLE))",
+      "aliases": {
+        "churned_arr": ["churn_arr", "lost_arr"]
+      }
+    },
+    {
+      "name": "nrr",
+      "version": 1,
+      "unit": "ratio",
+      "description": "Net revenue retention = (beginning + expansion - contraction - churn) / beginning.",
+      "formula": "(beginning_arr + expansion_arr - contraction_arr - churned_arr) / NULLIF(beginning_arr, 0)"
+    },
+    {
+      "name": "grr",
+      "version": 1,
+      "unit": "ratio",
+      "description": "Gross revenue retention = (beginning - contraction - churn) / beginning.",
+      "formula": "(beginning_arr - contraction_arr - churned_arr) / NULLIF(beginning_arr, 0)"
+    },
+    {
+      "name": "cogs",
+      "version": 1,
+      "unit": "currency",
+      "description": "Cost of goods sold.",
+      "requires": ["cogs"],
+      "sql": "SUM(TRY_CAST({cogs} AS DOUBLE))",
+      "aliases": {
+        "cogs": ["cost_of_goods", "cost_of_sales", "direct_cost"]
+      }
+    },
+    {
+      "name": "gross_margin",
+      "version": 1,
+      "unit": "ratio",
+      "description": "Gross margin = (revenue - cogs) / revenue.",
+      "formula": "(revenue - cogs) / NULLIF(revenue, 0)"
+    },
+    {
+      "name": "marketing_spend",
+      "version": 1,
+      "unit": "currency",
+      "description": "Acquisition spend in the period.",
+      "requires": ["marketing_spend"],
+      "sql": "SUM(TRY_CAST({marketing_spend} AS DOUBLE))",
+      "aliases": {
+        "marketing_spend": ["spend", "ad_spend", "acquisition_cost", "sales_marketing_spend"]
+      }
+    },
+    {
+      "name": "new_customers",
+      "version": 1,
+      "unit": "count",
+      "description": "New customers acquired in the period.",
+      "requires": ["new_customers"],
+      "sql": "SUM(TRY_CAST({new_customers} AS DOUBLE))",
+      "aliases": {
+        "new_customers": ["new_accounts", "acquisitions", "signups"]
+      }
+    },
+    {
+      "name": "cac",
+      "version": 1,
+      "unit": "currency",
+      "description": "Customer acquisition cost = spend / new customers.",
+      "formula": "marketing_spend / NULLIF(new_customers, 0)"
+    },
+    {
+      "name": "arpu",
+      "version": 1,
+      "unit": "currency",
+      "description": "Average revenue per user.",
+      "requires": ["arpu"],
+      "sql": "AVG(TRY_CAST({arpu} AS DOUBLE))",
+      "aliases": {
+        "arpu": ["revenue_per_user", "avg_revenue_per_user", "arpa"]
+      }
+    },
+    {
+      "name": "ltv",
+      "version": 1,
+      "unit": "currency",
+      "description": "Lifetime value = arpu * gross margin / churn rate.",
+      "formula": "arpu * gross_margin / NULLIF(churn_rate, 0)"
+    },
+    {
+      "name": "ltv_cac",
+      "version": 1,
+      "unit": "ratio",
+      "description": "LTV to CAC ratio.",
+      "formula": "ltv / NULLIF(cac, 0)"
+    },
+    {
+      "name": "throughput_rate",
+      "version": 1,
+      "unit": "count",
+      "description": "Units completed per hour.",
+      "requires": ["throughput_rate"],
+      "sql": "AVG(TRY_CAST({throughput_rate} AS DOUBLE))"
+    },
+    {
+      "name": "cycle_time_hours",
+      "version": 1,
+      "unit": "duration_hours",
+      "description": "Average cycle time in hours.",
+      "requires": ["cycle_time_hours"],
+      "sql": "AVG(TRY_CAST({cycle_time_hours} AS DOUBLE))",
+      "aliases": {
+        "cycle_time_hours": ["cycle_time", "lead_time_hours", "tat_hours"]
+      }
+    },
+    {
+      "name": "wip",
+      "version": 1,
+      "unit": "count",
+      "description": "Little's Law: WIP = throughput * cycle time.",
+      "formula": "throughput_rate * cycle_time_hours"
+    },
+    {
+      "name": "p95_lead_time",
+      "version": 1,
+      "unit": "duration_hours",
+      "description": "95th percentile lead time.",
+      "requires": ["lead_time"],
+      "sql": "QUANTILE_CONT(TRY_CAST({lead_time} AS DOUBLE), 0.95)",
+      "aliases": {
+        "lead_time": ["lead_time_hours", "cycle_time", "tat", "turnaround_time"]
+      }
+    },
+    {
+      "name": "on_time_rate",
+      "version": 1,
+      "unit": "ratio",
+      "description": "Share of deliveries that met their SLA.",
+      "requires": ["on_time"],
+      "sql": "AVG(CASE WHEN TRY_CAST({on_time} AS BOOLEAN) THEN 1.0 ELSE 0.0 END)",
+      "aliases": {
+        "on_time": ["on_time_flag", "sla_met", "delivered_on_time"]
+      }
+    },
+    {
+      "name": "retention_rate",
+      "version": 1,
+      "unit": "ratio",
+      "description": "Share of the cohort retained in the period.",
+      "requires": ["retained"],
+      "sql": "AVG(CASE WHEN TRY_CAST({retained} AS BOOLEAN) THEN 1.0 ELSE 0.0 END)",
+      "aliases": {
+        "retained": ["is_retained", "retention_flag", "active_flag"]
+      }
+    }
+  ]
+}

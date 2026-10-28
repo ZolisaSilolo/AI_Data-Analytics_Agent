@@ -76,6 +76,9 @@ export default function DisciplineTools({ selectedDiscipline }) {
           <button className="btn-secondary" onClick={calculateFinancial}>
             Compute ARR Waterfall & NRR
           </button>
+          <p className="local-note">
+            Local arithmetic for quick what-ifs. Dataset-backed figures come from the sandboxed SQL engine.
+          </p>
           {finResult && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '6px' }}>
               <div className="metric-card">
@@ -112,6 +115,9 @@ export default function DisciplineTools({ selectedDiscipline }) {
             </div>
           </div>
           <button className="btn-secondary" onClick={calculateOperations}>Compute Little's Law</button>
+          <p className="local-note">
+            Local arithmetic for quick what-ifs. Dataset-backed figures come from the sandboxed SQL engine.
+          </p>
           {opsResult && (
             <div className="metric-card" style={{ marginTop: '6px' }}>
               <span>Work In Progress (WIP = λ × W)</span>
@@ -142,6 +148,9 @@ export default function DisciplineTools({ selectedDiscipline }) {
             </div>
           </div>
           <button className="btn-secondary" onClick={calculateClinical}>Calculate Odds Ratio & RR</button>
+          <p className="local-note">
+            Local arithmetic for quick what-ifs. Dataset-backed figures come from the sandboxed SQL engine.
+          </p>
           {clinResult && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
               <div className="metric-card">
@@ -161,7 +170,8 @@ export default function DisciplineTools({ selectedDiscipline }) {
        selectedDiscipline !== 'Operations & Supply Chain' &&
        selectedDiscipline !== 'Clinical & Biotech' && (
         <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          Discipline engine active. All calculations are executed via DuckDB SQL and compiled Polars code in the sandbox.
+          Discipline engine active. The model computes dataset-backed metrics with the
+          sandboxed SQL engine; no analysis code runs in your browser.
         </p>
       )}
     </div>

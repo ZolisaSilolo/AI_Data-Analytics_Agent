@@ -8,6 +8,20 @@ export default function Header({
   setSelectedModel
 }) {
   const [showSettings, setShowSettings] = useState(false);
+  const [draftEndpoint, setDraftEndpoint] = useState(apiEndpoint || '');
+  const editable = import.meta.env.DEV;
+
+  const saveEndpoint = () => {
+    const value = draftEndpoint.trim().replace(/\/+$/, '');
+    setApiEndpoint(value);
+    try {
+      if (value) localStorage.setItem('omni.apiEndpoint', value);
+      else localStorage.removeItem('omni.apiEndpoint');
+    } catch {
+      /* storage may be unavailable in private mode */
+    }
+    setShowSettings(false);
+  };
 
   return (
     <header>
@@ -26,6 +40,10 @@ export default function Header({
           <Zap size={13} /> Scale-to-Zero
         </span>
 
+        <span className="badge" title="SQL is statically validated and executed in an isolated read-only sandbox">
+          <ShieldCheck size={13} /> Read-only sandbox
+        </span>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Cpu size={14} color="#38bdf8" />
           <select
@@ -33,17 +51,21 @@ export default function Header({
             onChange={(e) => setSelectedModel(e.target.value)}
             style={{ width: 'auto', padding: '4px 8px', fontSize: '12px', background: 'var(--bg-input)' }}
           >
-            <option value="anthropic.claude-3-5-sonnet-20241022-v2:0">Claude 3.5 Sonnet</option>
-            <option value="amazon.nova-pro-v1:0">Amazon Nova Pro</option>
-            <option value="amazon.nova-lite-v1:0">Amazon Nova Lite</option>
+            <option value="global.moonshotai.kimi-k3">Kimi K3 (global)</option>
+            <option value="global.anthropic.claude-sonnet-4-5-20250929-v1:0">
+              Claude Sonnet 4.5 (needs approval)
+            </option>
           </select>
         </div>
 
         <button
           className="btn-secondary"
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => {
+            setDraftEndpoint(apiEndpoint || '');
+            setShowSettings((open) => !open);
+          }}
           style={{ padding: '6px 10px', fontSize: '12px' }}
-          title="Configure API Gateway Endpoint"
+          title="API endpoint settings"
         >
           <Settings size={14} /> API
         </button>
@@ -62,23 +84,28 @@ export default function Header({
           zIndex: 100,
           boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
         }}>
-          <label>AWS API Gateway Base URL:</label>
+          <label>API Gateway Base URL:</label>
           <input
             type="text"
-            value={apiEndpoint}
-            onChange={(e) => setApiEndpoint(e.target.value)}
-            placeholder="https://xxx.execute-api.us-east-1.amazonaws.com/dev"
+            value={draftEndpoint}
+            onChange={(e) => setDraftEndpoint(e.target.value)}
+            placeholder="https://<api-id>.execute-api.<region>.amazonaws.com/dev"
+            readOnly={!editable}
           />
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
-            Set to your deployed AWS SAM HTTP API endpoint or local proxy.
+            {editable
+              ? 'Development only: override the locally configured endpoint.'
+              : 'Configured at build time via VITE_API_ENDPOINT.'}
           </p>
-          <button
-            className="btn-primary"
-            style={{ marginTop: '12px', width: '100%' }}
-            onClick={() => setShowSettings(false)}
-          >
-            Save Endpoint
-          </button>
+          {editable && (
+            <button
+              className="btn-primary"
+              style={{ marginTop: '12px', width: '100%' }}
+              onClick={saveEndpoint}
+            >
+              Save Endpoint
+            </button>
+          )}
         </div>
       )}
     </header>

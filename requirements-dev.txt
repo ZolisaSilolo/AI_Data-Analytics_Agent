@@ -1,0 +1,10 @@
+-r requirements.txt
+
+# Test + quality tooling (CI only)
+pytest>=8.3.3
+pytest-cov>=5.0.0
+moto[s3,dynamodb,sqs]>=5.0.0
+ruff>=0.7.0
+mypy>=1.13.0
+bandit>=1.7.10
+pip-audit>=2.7.3

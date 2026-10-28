@@ -3,21 +3,18 @@ Unit and Integration Test Suite for OmniAnalyst Platform.
 Verifies determinism, security boundaries, and discipline analytics.
 """
 
-import pytest
-import pandas as pd
-import numpy as np
-
-import sys
 import os
+import sys
+
+import pandas as pd
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from engine.sandbox import DeterministicSandbox, SecurityViolation
-from engine.invariants import InvariantChecker
-from disciplines.product import ProductAnalytics
-from disciplines.financial import FinancialAnalytics
-from disciplines.operations import OperationsAnalytics
-from disciplines.growth import GrowthAnalytics
 from disciplines.clinical import ClinicalAnalytics
+from disciplines.financial import FinancialAnalytics
+from disciplines.product import ProductAnalytics
+from engine.invariants import InvariantChecker
+from engine.sandbox import DeterministicSandbox
 
 
 def test_sandbox_sql_execution():
@@ -53,6 +50,45 @@ def test_invariant_reconciliation():
     # Discrepancy case:
     recon_fail = InvariantChecker.verify_reconciliation(1000.0, 200.0, 50.0, 1100.0)
     assert recon_fail["passed"] is False
+
+
+def test_run_suite_does_not_flag_scalar_aggregates():
+    """A one-row SUM result is an aggregate, not an under-powered sample."""
+    df = pd.DataFrame({"total_rev": [4500.0]})
+    invariants = InvariantChecker.run_suite(df, enforce_sample_size=False)
+
+    assert invariants["all_passed"] is True
+    check = next(c for c in invariants["checks"] if c["name"] == "sample_size_check")
+    assert check["applicable"] is False
+
+
+def test_run_suite_applies_declarative_rules():
+    df = pd.DataFrame({"rate": [0.1, 1.4], "revenue": [10.0, -5.0]})
+    invariants = InvariantChecker.run_suite(
+        df,
+        rules=[
+            {"type": "probability", "column": "rate"},
+            {"type": "non_negative", "column": "revenue"},
+            {"type": "reconciliation", "beginning": 100, "additions": 20,
+             "subtractions": 5, "ending": 115},
+        ],
+    )
+
+    checks = {c["name"]: c for c in invariants["checks"]}
+    assert checks["probability_range_check_rate"]["passed"] is False
+    assert checks["non_negative_check_revenue"]["passed"] is False
+    assert checks["reconciliation_check"]["passed"] is True
+    assert invariants["all_passed"] is False
+
+
+def test_sandbox_aggregate_passes_the_sample_size_gate():
+    sandbox = DeterministicSandbox()
+    sandbox.register_dataframe("sales", pd.DataFrame({"rev": [1.0, 2.0]}))
+
+    result = sandbox.execute_sql("SELECT SUM(rev) AS total FROM sales")
+
+    assert result["status"] == "SUCCESS"
+    assert result["invariants"]["all_passed"] is True
 
 
 def test_product_funnel_analytics():

@@ -5,9 +5,10 @@ with optional headless image export for static S3 reports.
 """
 
 from __future__ import annotations
-import io
+
 import json
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, Optional
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -15,6 +16,8 @@ import plotly.graph_objects as go
 
 class VisualizationGenerator:
     """Modern declarative visual grammar for multi-discipline data analysis."""
+
+    MAX_CHART_ROWS = 5000
 
     @staticmethod
     def generate_chart(
@@ -28,7 +31,21 @@ class VisualizationGenerator:
         """
         Generate a declarative Plotly figure based on data distribution and chart type.
         """
+        if df is None or df.empty:
+            raise ValueError("Cannot chart an empty result set.")
+
+        df = df.head(VisualizationGenerator.MAX_CHART_ROWS)
         cols = list(df.columns)
+        if not cols:
+            raise ValueError("Cannot chart a result set with no columns.")
+
+        for label, column in (("x", x_column), ("y", y_column), ("color", color_column)):
+            if column is not None and column not in cols:
+                raise ValueError(
+                    f"Chart {label} column '{column}' is not in the result columns: "
+                    + ", ".join(map(str, cols))
+                )
+
         if not x_column and cols:
             x_column = cols[0]
         if not y_column and len(cols) > 1 and chart_type not in ("histogram", "funnel"):

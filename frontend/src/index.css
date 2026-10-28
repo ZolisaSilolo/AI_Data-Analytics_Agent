@@ -215,6 +215,14 @@ button {
   margin-top: 4px;
 }
 
+/* Explains that a widget's numbers are local arithmetic, not sandbox output. */
+.local-note {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 .tabs {
   display: flex;
   gap: 8px;
